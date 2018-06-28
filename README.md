@@ -28,7 +28,7 @@ This Function lists Delivery Group statistics, including Name, # of Session, Mai
 ```
 .\Citrix-Morning-Report-Git.ps1 -DeliveryControllers xd7-dc01 -LogDir c:\temp
 ```
-This Example runs the script on Delivery Controll 'xd7-dc01' and logs the results to 'C:\Temp'
+This Example runs the script on Delivery Controller 'xd7-dc01' and logs the results to 'C:\Temp'
 ```
 .\Citrix-Morning-Report-Git.ps1 -DeliveryControllers xd7-dc01 -LogDir c:\temp -LogOnly
 ```
