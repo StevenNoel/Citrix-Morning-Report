@@ -108,7 +108,7 @@ Function MaintMode
             Foreach ($DeliveryController in $DeliveryControllers)
                 {
                     write-host "Machines in Maint Mode in " $DeliveryController ":" -ForegroundColor Green
-                    $maints = Get-BrokerDesktop -AdminAddress $DeliveryController -MaxRecordCount 5000 -InMaintenanceMode $true | Sort-Object DNSName | Where-Object {$_.hostedmachinename -notlike 'ctxxagha*' -and $_.HostedMachineName -notlike 'CTXTST-*'}
+                    $maints = Get-BrokerDesktop -AdminAddress $DeliveryController -MaxRecordCount 5000 -InMaintenanceMode $true | Sort-Object DNSName
                         foreach ($maint in $maints)
                             {
                                 Write-host $maint.DNSName.Split(".",2)[0]
@@ -166,7 +166,7 @@ Function UpTime
                                                 #Write-host $uptime.HostedMachineName
                                                 #Perform System Uptime Check
 					                            $LastBoot = (Get-WmiObject -Class Win32_OperatingSystem -computername $uptime.DNSName).LastBootUpTime
-        			                            $WMIsysuptime = (Get-Date) – [System.Management.ManagementDateTimeconverter]::ToDateTime($LastBoot)
+        			                            $WMIsysuptime = (Get-Date) Â– [System.Management.ManagementDateTimeconverter]::ToDateTime($LastBoot)
         			                            $WMIdays = $WMIsysuptime.Days
 			                                    $WMIDaystoHours = ($WMIsysuptime.Days)*24
         			                            $WMIhours = $WMIsysuptime.hours
