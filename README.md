@@ -7,29 +7,23 @@ You can run this on a Delivery Controller or a machine that has Studio installed
 
 # Functions
 ## Function ListUnregs
-```
 This Function lists Unregistered Machines.
-```
+
 ## Function ListOff
-```
 This Function lists Powered Off machines.
-```
+
 ## Function MaintMode
-```
 This Function lists Machines in Maintenance Mode.
-```
+
 ## Function PowerState
-```
 This Function lists Machines that have a 'bad' Power State.  An Example might be a Power State that is 'Unknown' to the hypervisor (hosting connection) or maybe stuck in a 'Turning On' state.
-```
+
 ## Function UpTime
-```
 This Function lists Machines that haven't been restarted in a certain period of time.
-```
+
 ## Function DGStats
-```
 This Function lists Delivery Group statistics, including Name, # of Session, Maintenance Mode, and Functional Level
-```
+
 # Examples
 ```
 .\Citrix-Morning-Report-Git.ps1 -DeliveryControllers xd7-dc01 -LogDir c:\temp
