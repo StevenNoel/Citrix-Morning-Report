@@ -1,6 +1,8 @@
 # Citrix-Morning-Report
 This script is something that can be scheduled to be run every morning to understand what the environment looks like.  Also takes corrective actions if needed.
 
+Note: Use the -LogOnly option to run the script in Log Only mode, which doesn't take any actions on any machines.
+
 Tested with XA/XD 7.15LTSR and 7.18, however this should work with pretty much all 7.x versions.
 # Prerequisites
 You can run this on a Delivery Controller or a machine that has Studio installed.  See link for more information: https://developer-docs.citrix.com/projects/delivery-controller-sdk/en/latest/?_ga=2.136519158.731763323.1530151703-1594485461.1522783813#use-the-sdk 
