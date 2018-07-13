@@ -13,7 +13,7 @@ This Function lists Unregistered Machines.
 This Function lists Powered Off machines.
 
 ## Function MaintMode
-This Function lists Machines in Maintenance Mode.
+This Function lists Machines in Maintenance Mode. Proactively disables maintnenace mode on machines. If machine has a 'Maintenance*' tag on it, it leave it in Maintenance mode.
 
 ## Function PowerState
 This Function lists Machines that have a 'bad' Power State.  An Example might be a Power State that is 'Unknown' to the hypervisor (hosting connection) or maybe stuck in a 'Turning On' state.
