@@ -197,7 +197,7 @@ Function UpTime
                                                 #Write-host $uptime.HostedMachineName
                                                 #Perform System Uptime Check
 					                            $LastBoot = (Get-WmiObject -Class Win32_OperatingSystem -computername $uptime.DNSName).LastBootUpTime
-        			                            $WMIsysuptime = (Get-Date)  [System.Management.ManagementDateTimeconverter]::ToDateTime($LastBoot)
+        			                            $WMIsysuptime = (Get-Date) - [System.Management.ManagementDateTimeconverter]::ToDateTime($LastBoot)
         			                            $WMIdays = $WMIsysuptime.Days
 			                                    $WMIDaystoHours = ($WMIsysuptime.Days)*24
         			                            $WMIhours = $WMIsysuptime.hours
