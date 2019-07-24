@@ -16,6 +16,7 @@
                 [string[]]$DeliveryControllers,
                 [Parameter(Mandatory=$True)]
                 [string]$LogDir,
+                [string]$MaintTag,
                 #[ValidateSet($True,$False)]
                 [Switch]$Email,
                 [Switch]$LogOnly,
@@ -88,7 +89,7 @@ Function ListOff
             Foreach ($DeliveryController in $DeliveryControllers)
                 {
                     write-host "Powered Off Machines in " $DeliveryController ":" -ForegroundColor Green
-                    $poffs = Get-BrokerMachine -AdminAddress $DeliveryController -MaxRecordCount 5000 -PowerState Off -PowerActionPending $false -RegistrationState Unregistered | Sort-Object DNSName | Where-Object {($_.Tags -join(',')) -notlike "*MaintenanceMode-Manual*" -and $_.hostedmachinename -notlike 'ctxTEST*' -and $_.HostedMachineName -notlike 'CTXTST-*'}
+                    $poffs = Get-BrokerMachine -AdminAddress $DeliveryController -MaxRecordCount 5000 -PowerState Off -PowerActionPending $false -RegistrationState Unregistered | Sort-Object DNSName | Where-Object {($_.Tags -join(',')) -notlike "*$MaintTag*" -and $_.hostedmachinename -notlike 'ctxTEST*' -and $_.HostedMachineName -notlike 'CTXTST-*'}
                         foreach ($poff in $poffs)
                             {
                                 
@@ -121,7 +122,7 @@ Function MaintMode
                     $maints = Get-BrokerDesktop -AdminAddress $DeliveryController -MaxRecordCount 5000 -IsPhysical $False | Sort-Object DNSName | Where-Object {$_.HostedMachineName -notlike 'CTXTST-*'}
                         foreach ($maint in $maints)
                             {
-                                if ($maint.Tags -like 'Maintenance*')
+                                if ($maint.Tags -like "$MaintTag*")
                                     {
                                         Write-host $maint.DNSName.Split(".",2)[0] "(Tagged for Maintenance Mode)"
                                             if (!($LogOnly))    
@@ -136,7 +137,7 @@ Function MaintMode
                                                         }
                                                 }
                                     }
-                                elseif ($maint.Tags -notcontains 'Maintenance*' -and $maint.InMaintenanceMode -eq "True")
+                                elseif ($maint.Tags -notcontains "$MaintTag*" -and $maint.InMaintenanceMode -eq "True")
                                     {
                                         Write-host $maint.DNSName.Split(".",2)[0] " (Disabling Maint Mode)"
                                         if (!($LogOnly))
