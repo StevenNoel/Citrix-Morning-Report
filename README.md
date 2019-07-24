@@ -26,6 +26,21 @@ This Function lists Machines that haven't been restarted in a certain period of 
 ## Function DGStats
 This Function lists Delivery Group statistics, including Name, # of Session, Maintenance Mode, and Functional Level
 
+## Function Reset-BadLoadEvaluators
+This Function checks VDAs that come up from nightly reboot with Load Evaluator at 100% but 0 user sessions. These hosts will not take new sessions until this is reset.  This function identifies VDAs that need this and restarts the service accordingly.
+
+## Function Get-RDSGracePeriod
+This Function will check VDAs with RDS installed and confirm the RDS Grace Period is at 0, which means it has checked in with the RDS Licensing server and functioning correclty.
+
+## Function Get-MoveLogs
+This Function copies over certain log files that you may need.  In this case I'm copying over MOVE log files.  Feel free to substitute whatever log file you need to copy.  (Be sure to change the \\NAS\Share path).
+
+## Function Check-AppVLogs
+This Function checks the VDA for App-V Scheduler service and checks the event viewer for certain errors that may indicate a problem.
+
+#
+Be Sure to comment out certain functions that aren't tailored to your environment.  This is done at the bottom of the script.
+
 # Examples
 ```
 .\Citrix-Morning-Report-Git.ps1 -DeliveryControllers xd7-dc01 -LogDir c:\temp
