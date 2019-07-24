@@ -1,3 +1,16 @@
+ <#
+ Version Control:
+ 11/26/2018 -Added Event Viewer Function
+ 11/27/2018 -Corrected Maint mode function
+ 12/27/2018 -Added App-V Log checks
+ 01/15/2019 -Performance improvements in Get-RDSGracePeriod and Check-AppVLogs
+ 03/05/2019 -Updated Check-AppVLogs to work with App-V Scheduler 2.5 and 2.6
+ 03/05/2019 -Updated Get-RDSGracePeriod to not warn on 0 days, since that's now a success condition with working RDS licensing
+ 03/26/2019 -Added GPO Checks
+ 04/08/2019 -Updated App-V Checks
+ 06/19/2019 -updated GPO-Check function to include 'registered' for the get-brokermachine
+ #>
+
  Param(
                 [Parameter(Mandatory=$True,Position=1)]
                 [string[]]$DeliveryControllers,
@@ -36,11 +49,11 @@ Function ListUnregs
             Foreach ($DeliveryController in $DeliveryControllers)
                 {
                     write-host "Unregistered Machines in " $DeliveryController ":" -ForegroundColor Green
-                    $unregs = Get-BrokerDesktop -AdminAddress $DeliveryController -MaxRecordCount 5000 -PowerState On -PowerActionPending $false -RegistrationState Unregistered | Sort-Object DNSName
+                    $unregs = Get-BrokerMachine -AdminAddress $DeliveryController -MaxRecordCount 5000 -PowerState On -PowerActionPending $false -RegistrationState Unregistered | Sort-Object DNSName
                         foreach ($unreg in $unregs)
                             {
                                 #write-host $unreg.dnsname
-                                if (!($unreg.AssociatedUserNames))
+                                if ($unreg.SummaryState -like 'Available' -or $unreg.SummaryState -like 'Unregistered')
                                     {
                                         
                                         Try
@@ -66,8 +79,6 @@ Function ListUnregs
     }
 ############ END List Unregistered Machines ###########
 
-
-
 ############ List Powered Off Machines ###########
 Function ListOff
     {
@@ -77,7 +88,7 @@ Function ListOff
             Foreach ($DeliveryController in $DeliveryControllers)
                 {
                     write-host "Powered Off Machines in " $DeliveryController ":" -ForegroundColor Green
-                    $poffs = Get-BrokerDesktop -AdminAddress $DeliveryController -MaxRecordCount 5000 -PowerState Off -PowerActionPending $false -RegistrationState Unregistered | Sort-Object DNSName
+                    $poffs = Get-BrokerMachine -AdminAddress $DeliveryController -MaxRecordCount 5000 -PowerState Off -PowerActionPending $false -RegistrationState Unregistered | Sort-Object DNSName | Where-Object {($_.Tags -join(',')) -notlike "*MaintenanceMode-Manual*" -and $_.hostedmachinename -notlike 'ctxxagha*' -and $_.HostedMachineName -notlike 'CTXTST-*'}
                         foreach ($poff in $poffs)
                             {
                                 
@@ -100,15 +111,14 @@ Function ListOff
     }
 ############ END List Powered Off Machines ###########
 
-
 ############ List Machines in Maint Mode ###########
 Function MaintMode
     {
-Write-Host "****************************************************"
+        Write-Host "****************************************************"
             Foreach ($DeliveryController in $DeliveryControllers)
                 {
                     write-host "Machines in Maint Mode in " $DeliveryController ":" -ForegroundColor Green
-                    $maints = Get-BrokerDesktop -AdminAddress $DeliveryController -MaxRecordCount 5000 -InMaintenanceMode $true | Sort-Object DNSName | Where-Object {$_.HostedMachineName -notlike 'CTXTST-*'}
+                    $maints = Get-BrokerDesktop -AdminAddress $DeliveryController -MaxRecordCount 5000 -IsPhysical $False | Sort-Object DNSName | Where-Object {$_.HostedMachineName -notlike 'CTXTST-*'}
                         foreach ($maint in $maints)
                             {
                                 if ($maint.Tags -like 'Maintenance*')
@@ -126,7 +136,7 @@ Write-Host "****************************************************"
                                                         }
                                                 }
                                     }
-                                else
+                                elseif ($maint.Tags -notcontains 'Maintenance*' -and $maint.InMaintenanceMode -eq "True")
                                     {
                                         Write-host $maint.DNSName.Split(".",2)[0] " (Disabling Maint Mode)"
                                         if (!($LogOnly))
@@ -150,7 +160,6 @@ Write-Host "****************************************************"
       Write-Host "****************************************************"
     }
 ############ END List Machines in Maint Mode ###########
-
 
 ############ List Bad Power States ###########
 Function PowerState
@@ -197,12 +206,12 @@ Function UpTime
                                                 #Write-host $uptime.HostedMachineName
                                                 #Perform System Uptime Check
 					                            $LastBoot = (Get-WmiObject -Class Win32_OperatingSystem -computername $uptime.DNSName).LastBootUpTime
-        			                            $WMIsysuptime = (Get-Date) - [System.Management.ManagementDateTimeconverter]::ToDateTime($LastBoot)
+        			                            $WMIsysuptime = (Get-Date) – [System.Management.ManagementDateTimeconverter]::ToDateTime($LastBoot)
         			                            $WMIdays = $WMIsysuptime.Days
 			                                    $WMIDaystoHours = ($WMIsysuptime.Days)*24
         			                            $WMIhours = $WMIsysuptime.hours
         			                            $WMITotalHours = $WMIDaystoHours + $WMIhours
-					                                if ($WMITotalHours -igt 24 -and (!($uptime.AssociatedUserNames)))
+					                                if ($WMITotalHours -igt 24 -and ($uptime.SummaryState -like 'Available'))
 						                                {
 							                                if (!($LogOnly)){New-BrokerHostingPowerAction -AdminAddress $DeliveryController -Action Reset -MachineName $uptime.HostedMachineName | Out-Null}
                                                             Write-Host $uptime.DNSName.Split(".",2)[0] has been up for $WMITotalHours Hours " (Force Restarting)"
@@ -210,7 +219,7 @@ Function UpTime
 							
 							
 						                                }
-                                                    Elseif ($WMITotalHours -igt 24 -and ($uptime.AssociatedUserNames))
+                                                    Elseif ($WMITotalHours -igt 24 -and ($uptime.SummaryState -like 'InUse'))
                                                         {
                                                             Write-Host $uptime.DNSName.Split(".",2)[0] has been up for $WMITotalHours Hours " (Users Logged in, Can't Restart)"
                                                         }
@@ -253,6 +262,274 @@ Function DGStats
     }
 ############ END List Delivery Group Stats ###########
 
+############ List Decoms ###########
+Function Decoms
+    {
+        Write-Host "****************************************************"
+        
+            Foreach ($DeliveryController in $DeliveryControllers)
+                {
+                    write-host "Decoms in " $DeliveryController ":" -ForegroundColor Green
+                    $decoms = Get-BrokerMachine -AdminAddress $DeliveryController -MaxRecordCount 5000 | Sort-Object DNSName | Where-Object {($_.Tags -join(',')) -like "*Decom*"}
+                        foreach ($decom in $decoms)
+                            {
+                                
+                                Write-host $Decom.dnsname
+                            }
+                    if ($decoms){$script:bad=1}
+                Write-host " "
+                }
+        Write-Host "****************************************************" 
+    }
+############ END Decoms ###########
+
+############ Load Eval ############
+Function Reset-BadLoadEvaluators
+    # Purpose: Some VDAs will come up from nightly reboot with Load Evaluator at 100% but 0 user sessions. These hosts will not take new sessions until this is reset, which can be done 
+    # with a restart of the Citrix Desktop Service, aka BrokerAgent. This function identifies VDAs that need this and restarts the service accordingly.
+    {
+            Write-Host "****************************************************`n"
+            Write-Host "Checking for bad load evaluator data`n" -ForegroundColor Green
+            Foreach ($DeliveryController in $DeliveryControllers)
+                {
+                    # Evaluate current state:
+                    # Get-BrokerMachine -AdminAddress $DeliveryController -SessionSupport MultiSession -Property SessionCount,LoadIndex,DNSName | Sort-Object @{Expression="LoadIndex";Descending=$True},@{Expression="SessionCount";Descending=$True}
+                    Write-Host "Running Load Evaluator check against VDAs on $DeliveryController"
+                    Write-Host " "
+                    $badMachines = @()
+                    # Machines with 100% load evaluator and 0 sessions
+                    try {
+                        $badMachines = Get-BrokerMachine -AdminAddress $DeliveryController -SessionSupport MultiSession -Property SessionCount,LoadIndex,DNSName -ErrorAction Stop | Where-Object {($_.LoadIndex -eq 10000) -and ($_.SessionCount -eq 0)} | Select-Object -ExpandProperty DNSName
+                    }
+                    catch {
+                        Write-Host "Unable to get data from DDC: $DeliveryController"
+                        Break
+                    }
+                    if ($badMachines.Count -ne 0) {
+                        if (!$LogOnly) {
+                            Invoke-Command -ComputerName $badMachines {Restart-Service -Name BrokerAgent}
+                            $badOutput = $badMachines -join ", "
+                            Write-Host "Reset BrokerAgent service on VDAs:"
+                            Write-Host "$badOutput"
+                        }
+                        else {
+                            Write-Host "In logging mode - not taking action. Hosts in need of attention:"
+                            Write-Host "$badOutput"
+                        }
+                    }
+                    else {
+                        Write-Host "No bad load evaluators found on $DeliveryController`n"
+                    }
+                    Write-Host " "
+                }
+            Write-Host "****************************************************`n"
+    }
+######### END Load Eval ###########
+
+########### Check Event Viewer ############
+
+Function Check-EventViewer
+    {
+        Write-Host "****************************************************"
+        
+            Foreach ($DeliveryController in $DeliveryControllers)
+                {
+                    write-host "Event Viewer Events in " $DeliveryController ":" -ForegroundColor Green
+                    
+                    $beforedate = $firstcomp.AddDays(-1)
+                    $events=0
+
+                    #List of EventIDs to search for
+                    $EventIDs = '1069'
+                    
+                    $VDAs = Get-BrokerDesktop -AdminAddress $DeliveryController -MaxRecordCount 5000 -RegistrationState Registered -IsPhysical $False | Sort-Object DNSName
+                    Foreach ($VDA in $VDAs)
+                        {
+                            foreach ($EventID in $EventIDs)
+                                {
+                                    #$CheckSysEvents = Get-EventLog -ComputerName $vda.DNSName.Split(".",2)[0] -LogName 'System' -Newest 1 -InstanceId $EventID -After $beforedate -ErrorAction SilentlyContinue
+                                    $CheckSysEvents = Get-WinEvent -ComputerName $vda.DNSName.Split(".",2)[0] -MaxEvents 1 -ErrorAction SilentlyContinue -WarningAction SilentlyContinue -FilterHashtable @{ LogName = "System"; StartTime = $beforedate; ID = $EventID}
+                                    if ($CheckSysEvents)
+                                        {
+                                            if ($CheckSysEvents.ID -eq '1069')
+                                                {
+                                                    Write-host Name: $vda.DNSName.Split(".",2)[0] EventID: $CheckSysEvents.ID Message: $CheckSysEvents.Message
+                            
+                                                }
+                                            $events++
+                                        }
+                                }
+                        }
+
+                    if ($events){$script:bad=1}
+                Write-host " "
+                }
+        Write-Host "****************************************************" 
+    }
+
+########### END Check Event Viewer ########
+
+############ Copy MOVE Log ###########
+Function Get-MoveLogs
+    {
+        
+        Write-Host "****************************************************"
+        write-host "Running MOVE Log function (Only executes on Sunday), Share = \\epo-p3\reports" -ForegroundColor Green
+        if ($firstcomp.DayOfWeek -like 'Sunday')
+        {
+            
+            $MOVELog = "\\nas\share\Citrix\Logs\MOVE\" + $firstcomp.Year + "-" + $firstcomp.Month + "-" + $firstcomp.Day + "-" + "McafeeMOVEScans.csv"
+            Copy-Item -Path \\servername\reports\McAfeeMOVEScans.csv -Destination $MOVELog -Force -Verbose
+        }
+
+        
+        Write-Host "****************************************************"
+    }
+############ END Copy MOVE Log ###########
+
+############ RDS Grace Period Check ###########
+Function Get-RDSGracePeriod
+    {
+        Foreach ($DeliveryController in $DeliveryControllers)
+                {
+                    write-host "Check RDS Grace Period in" $DeliveryController ":" -ForegroundColor Green
+                    $RDSVMs = Get-BrokerMachine -AdminAddress $DeliveryController -MaxRecordCount 5000 -RegistrationState Registered | Where-Object {$_.PowerState -ne 'Unmanaged' -and $_.SessionSupport -like "MultiSession"}  | Sort-Object DNSName
+                        Foreach ($RDSVM in $RDSVMs)
+                        {
+                               $vmName = $RDSVM.DNSName.Split(".",2)[0]
+                               Try
+                               {
+                                   #$GracePeriod = Invoke-Command -ComputerName $RDSVM.DNSName.Split(".",2)[0] -ScriptBlock {
+                                   #         (Invoke-WmiMethod -PATH (gwmi -namespace root\cimv2\terminalservices -class win32_terminalservicesetting).__PATH -name GetGracePeriodDays).daysleft                 
+                                   #}
+                                    $GracePeriod = (Invoke-WmiMethod -Path (Get-WmiObject -Namespace "root\cimv2\terminalservices" -Class "Win32_TerminalServiceSetting" -ComputerName $vmName).__PATH -Name GetGracePeriodDays).DaysLeft
+                                    If ($GracePeriod -ilt '5' -and $GracePeriod -igt '0')
+                                        {
+                                            Write-host "$vmName Grace Period BAD - NEEDS ATTENTION ($GracePeriod)"
+                                        }
+                                        Else
+                                        {
+                                            #Write-host $RDSVM.DNSName.Split(".",2)[0] Grace Period Good $GracePeriod
+                                        }
+                               }
+                               Catch
+                               {
+                               }
+
+                        }
+                }
+        
+        Write-Host "****************************************************"
+    }
+############ END RDS Grace Period Check ###########
+
+############ Check GPO Application ############
+## This function is reserved to check specific company type GPO settings upon boot ##
+Function Check-GPO
+    {
+        Write-Host "****************************************************`n"
+        Write-Host "Checking for successful GPO application`n" -ForegroundColor Green
+
+        Foreach ($DeliveryController in $DeliveryControllers)
+            {
+                #Skip certain Citrix Sites
+                if ($DeliveryController -match "DeliveryControllerName") {
+                    Write-Verbose "Skipping check in Specific Site"
+                    Continue
+                }
+                $servers = (Get-BrokerMachine -AdminAddress $DeliveryController -RegistrationState Registered -SessionSupport MultiSession).HostedMachineName
+
+                $runTime = (Get-Date -Format s).ToString().Replace(":","-")
+
+                $objs = Invoke-Command -ComputerName $servers -ScriptBlock {
+   
+                    # Checks
+                    $wc = Get-Item -Path "\\localhost\d$\vdiskdif.vhdx"
+                    $pfLastWrite = Get-ChildItem -Path "\\localhost\d$" -Force | Where-Object {$_.Name -eq "pagefile.sys"} | Select-Object -ExpandProperty LastWriteTime
+
+                    $obj = [pscustomobject]@{
+                        HostName = $env:COMPUTERNAME
+                        WCTime = $wc.CreationTime
+                        PF = $pfLastWrite
+                    }
+
+                    Return $obj
+                }
+
+                $objs | Sort-Object HostName | Format-Table HostName,WCTime,PF | Out-File "\\NAS\Share\Citrix\Logs\BootChecks\BootChecks-$runTime.log"
+                Write-Host "$DeliveryController results written to \\NAS\Share\Citrix\Logs\BootChecks\BootChecks-$runTime.log"
+            }
+        Write-Host "`n****************************************************`n"
+        }
+
+############ End Check GPO Application ############
+
+############ Check App-V Logs ############
+Function Check-AppVLogs
+    {
+        $ErrorActionPreference = 'SilentlyContinue'
+        Write-Host "****************************************************`n"
+        Write-Host "Checking for App-V Scheduler log errors`n" -ForegroundColor Green
+        Foreach ($DeliveryController in $DeliveryControllers)
+            {
+                $servers = Get-BrokerMachine -AdminAddress $DeliveryController -SessionSupport MultiSession
+                #Skipping specific Delivery Controller
+                if ($DeliveryController -match "DeliveryControllerName") {
+                    Write-Verbose "Skipping App-V check in DeliveryControllerName"
+                    Continue
+                }
+                
+                foreach ($s in $servers) {
+                    $serverName = $s.HostedMachineName
+                    #Write-Host "Checking $serverName"
+                    try {
+                        $reachable = Test-Connection -ComputerName $serverName -Count 1 -Quiet
+                        if ($reachable) {
+                            # App-V 2.5 uses this name for the service
+                            $service25 = Get-Service -ComputerName $serverName -Name "AppV5SchedulerService"
+                            # App-V 2.6 uses this name for the service
+                            $service26 = Get-Service -ComputerName $serverName -Name "AppVSchedulerService"
+                            if (($service25 -eq $null) -and ($service26 -eq $null)) {
+                                Throw
+                            }
+                        }
+                        else {
+                            Write-Host "$serverName not reachable. Continuing."
+                            Continue
+                        }
+                    }
+                    catch {
+                        Write-Host "App-V Scheduler service not found on host $serverName"
+                        Continue 
+                    }
+                    try {
+                        if ($service25) {
+                            # App-V 2.5 logs to this location
+                            $errorCount = (Get-WinEvent -ComputerName $serverName -FilterHashtable @{LogName='App-V 5 Scheduler';ProviderName='App-V 5 Scheduler Service';Id=0} | Where-Object {$_.Message -match "CoCreateInstance"}).Count
+                            if ($errorCount -gt 0) {
+                                Write-Host "App-V Errors logged on $serverName. Restarting service."
+                                if (!$LogOnly) {Invoke-Command -ComputerName $serverName -ScriptBlock {Restart-Service -Name AppV5SchedulerService}}
+                            }
+                        }
+                        elseif ($service26) {
+                            # App-V 2.6 logs to this location
+                            $errorCount = (Get-WinEvent -ComputerName $serverName -FilterHashtable @{LogName='App-V 5 Scheduler Agent';ProviderName='App-V 5 Scheduler Service';Id=0} | Where-Object {$_.Message -match "CoCreateInstance"}).Count
+                            if ($errorCount -gt 0) {
+                                Write-Host "App-V Errors logged on $servername. Restarting service."
+                                if (!$LogOnly) {Invoke-Command -ComputerName $serverName -ScriptBlock {Restart-Service -Name AppVSchedulerService}}
+                            }
+                        }
+                    }
+                    catch {
+                        Continue
+                    }  
+                }  
+            }
+        Write-Host ""
+        Write-Host "****************************************************`n"
+        $ErrorActionPreference = 'Continue'
+    }
+############ END Check App-V Logs ############
 
 ############ Email SMTP ###########
 Function Email
@@ -278,37 +555,71 @@ Function Email
 
 ############ END Email SMTP ###########
 
+
+
 ###### Call out Functions ############
 
 ListUnregs
 
-write-host "-"
+$now = Get-Date -Format s
+write-host "- $now"
 
 ListOff
 
-write-host "-"
+$now = Get-Date -Format s
+write-host "- $now"
 
 MaintMode
 
-write-host "-"
+$now = Get-Date -Format s
+write-host "- $now"
 
 PowerState
 
-write-host "-"
+$now = Get-Date -Format s
+write-host "- $now"
 
 UpTime
 
-write-host "-"
+$now = Get-Date -Format s
+write-host "- $now"
 
-DGStats
+Decoms
 
+$now = Get-Date -Format s
+write-host "- $now"
+
+#DGStats
+
+Reset-BadLoadEvaluators
+
+$now = Get-Date -Format s
+write-host "- $now"
+
+#Check-EventViewer (disabling function now that we have the Get-RDSGracePeriod function)
+Get-RDSGracePeriod
+
+$now = Get-Date -Format s
+write-host "- $now"
+
+Get-MoveLogs
+
+$now = Get-Date -Format s
+write-host "- $now"
+
+Check-GPO
+
+$now = Get-Date -Format s
+write-host "- $now"
+
+Check-AppVLogs
 
 ####################### Get Elapsed Time of Script ###########
 $lastcomp = Get-date
 $diff = ($lastcomp - $firstcomp)
 
 Write-Host This Script took $diff.Minutes minutes and $diff.Seconds seconds to complete.
-Write-Host "This Script Runs at 5:30AM from ($hostname)"
+Write-Host "This Script Runs at 4:00AM from ($hostname)"
 
 ##############################################################
 
@@ -317,11 +628,3 @@ Stop-Transcript
 if ($Email) {Email}
 
 ###### END Call out Functions ############
-
-
-
-
-
-
-
-
