@@ -374,7 +374,7 @@ Function Get-MoveLogs
     {
         
         Write-Host "****************************************************"
-        write-host "Running MOVE Log function (Only executes on Sunday), Share = \\epo-p3\reports" -ForegroundColor Green
+        write-host "Running MOVE Log function (Only executes on Sunday), Share = \\NAS\Share" -ForegroundColor Green
         if ($firstcomp.DayOfWeek -like 'Sunday')
         {
             
