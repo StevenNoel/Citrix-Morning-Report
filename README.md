@@ -15,10 +15,10 @@ This Function lists Unregistered Machines.
 This Function lists Powered Off machines.
 
 ## Function MaintMode
-This Function lists Machines in Maintenance Mode. Proactively disables maintnenace mode on machines. If machine has a 'Maintenance*' tag on it, it leave it in Maintenance mode.
+This Function lists Machines in Maintenance Mode. Proactively disables maintnenace mode on machines. If machine has a 'Maintenance*' tag on it, it leave it in Maintenance mode.  This has been added as a parameter for custom Tag names.
 
 ## Function PowerState
-This Function lists Machines that have a 'bad' Power State.  An Example might be a Power State that is 'Unknown' to the hypervisor (hosting connection) or maybe stuck in a 'Turning On' state.
+This Function lists Machines that have a 'bad' Power State.  An Example might be a Power State that is 'Unknown' to the hypervisor (hosting connection) or maybe stuck in a 'Turning On' state.  Note: If you added the $MaintTag parameter, the script will leave it alone.
 
 ## Function UpTime
 This Function lists Machines that haven't been restarted in a certain period of time.
