@@ -88,7 +88,7 @@ Function ListOff
             Foreach ($DeliveryController in $DeliveryControllers)
                 {
                     write-host "Powered Off Machines in " $DeliveryController ":" -ForegroundColor Green
-                    $poffs = Get-BrokerMachine -AdminAddress $DeliveryController -MaxRecordCount 5000 -PowerState Off -PowerActionPending $false -RegistrationState Unregistered | Sort-Object DNSName | Where-Object {($_.Tags -join(',')) -notlike "*MaintenanceMode-Manual*" -and $_.hostedmachinename -notlike 'ctxxagha*' -and $_.HostedMachineName -notlike 'CTXTST-*'}
+                    $poffs = Get-BrokerMachine -AdminAddress $DeliveryController -MaxRecordCount 5000 -PowerState Off -PowerActionPending $false -RegistrationState Unregistered | Sort-Object DNSName | Where-Object {($_.Tags -join(',')) -notlike "*MaintenanceMode-Manual*" -and $_.hostedmachinename -notlike 'ctxTEST*' -and $_.HostedMachineName -notlike 'CTXTST-*'}
                         foreach ($poff in $poffs)
                             {
                                 
