@@ -15,10 +15,10 @@ This Function lists Unregistered Machines.
 This Function lists Powered Off machines.
 
 ## Function MaintMode
-This Function lists Machines in Maintenance Mode. Proactively disables maintnenace mode on machines. If machine has a 'Maintenance*' tag on it, it leave it in Maintenance mode.  This has been added as a parameter for custom Tag names.
+This Function lists Machines in Maintenance Mode. Proactively disables maintnenace mode on machines. If machine has a 'Maintenance*' tag on it, it leave it in Maintenance mode.  This has been added as a parameter for custom Tag names.  Note: If you hvae a VDA in maintenance mode, but do not have it tagged, the script will take it out of maintenance mode.  Also, if you have a machine tagged for Maintenance, but it's not actually in Maintenance Mode, the script will enable Maintenance Mode.
 
 ## Function PowerState
-This Function lists Machines that have a 'bad' Power State.  An Example might be a Power State that is 'Unknown' to the hypervisor (hosting connection) or maybe stuck in a 'Turning On' state.  Note: If you added the $MaintTag parameter, the script will leave it alone.
+This Function lists Machines that have a 'bad' Power State.  An Example might be a Power State that is 'Unknown' to the hypervisor (hosting connection) or maybe stuck in a 'Turning On' state.  Note: If you added the $MaintTag parameter, the script will not try to turn the VDA on.
 
 ## Function UpTime
 This Function lists Machines that haven't been restarted in a certain period of time.
@@ -43,9 +43,9 @@ Be Sure to comment out certain functions that aren't tailored to your environmen
 
 # Examples
 ```
-.\Citrix-Morning-Report-Git.ps1 -DeliveryControllers xd7-dc01 -LogDir c:\temp
+.\Citrix-Morning-Report-Git.ps1 -DeliveryControllers xd7-dc01 -LogDir c:\temp -MaintTag "MaintenanceMode-Manual"
 ```
-This Example runs the script on Delivery Controller 'xd7-dc01' and logs the results to 'C:\Temp'
+This Example runs the script on Delivery Controller 'xd7-dc01' and logs the results to 'C:\Temp'.  It will also not take any action on machines tagged with the value of "MaintenanceMode-Manual".
 ```
 .\Citrix-Morning-Report-Git.ps1 -DeliveryControllers xd7-dc01 -LogDir c:\temp -LogOnly
 ```
