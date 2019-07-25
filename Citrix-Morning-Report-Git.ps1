@@ -21,7 +21,7 @@
                 [Switch]$Email,
                 [Switch]$LogOnly,
                 [String]$SMTPserver,
-                [string]$ToAddress,
+                [string[]]$ToAddress,
                 [string]$FromAddress
                 )
 
