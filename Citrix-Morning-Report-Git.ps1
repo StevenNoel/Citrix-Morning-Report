@@ -16,7 +16,7 @@
                 [string[]]$DeliveryControllers,
                 [Parameter(Mandatory=$True)]
                 [string]$LogDir,
-                [string]$MaintTag,
+                [string]$MaintTag = "None",
                 #[ValidateSet($True,$False)]
                 [Switch]$Email,
                 [Switch]$LogOnly,
@@ -28,7 +28,7 @@
 cls
 asnp citrix*
 
-$bad=0
+$script:bad=0
 
 #Defines log path
 $firstcomp = Get-Date
@@ -133,10 +133,11 @@ Function MaintMode
                                                         }
                                                     Catch
                                                         {
-                                                            Write-host $maint.DNSName.Split(".",2)[0] "(Unable to Enable Maintenance Mode"
+                                                            Write-host $maint.DNSName.Split(".",2)[0] "(Unable to Enable Maintenance Mode)"
                                                         }
                                                 }
-                                    }
+                                    if ($maint){$script:bad = '1'}
+				    }
                                 elseif ($maint.Tags -notcontains "$MaintTag*" -and $maint.InMaintenanceMode -eq "True")
                                     {
                                         Write-host $maint.DNSName.Split(".",2)[0] " (Disabling Maint Mode)"
@@ -155,7 +156,6 @@ Function MaintMode
                                     }
                                 
                             }
-                    if ($maints){$script:bad=1}
                 Write-host " "
                 }
       Write-Host "****************************************************"
@@ -218,12 +218,13 @@ Function UpTime
                                                             Write-Host $uptime.DNSName.Split(".",2)[0] has been up for $WMITotalHours Hours " (Force Restarting)"
 							                                $u++
 							
-							
+										if ($uptime){$script:bad = '1'}
 						                                }
                                                     Elseif ($WMITotalHours -igt 24 -and ($uptime.SummaryState -like 'InUse'))
                                                         {
                                                             Write-Host $uptime.DNSName.Split(".",2)[0] has been up for $WMITotalHours Hours " (Users Logged in, Can't Restart)"
-                                                        }
+                                                        	if ($uptime){$script:bad = '1'}
+							}
                                             }
                                         Catch
                                             {
@@ -232,7 +233,6 @@ Function UpTime
                                     
                                     }
                             }
-                    if ($uptimes){$script:bad=1}
                 Write-host " "
                 }
         Write-Host "****************************************************"    
@@ -295,7 +295,6 @@ Function Reset-BadLoadEvaluators
                 {
                     # Evaluate current state:
                     # Get-BrokerMachine -AdminAddress $DeliveryController -SessionSupport MultiSession -Property SessionCount,LoadIndex,DNSName | Sort-Object @{Expression="LoadIndex";Descending=$True},@{Expression="SessionCount";Descending=$True}
-                    Write-Host "Running Load Evaluator check against VDAs on $DeliveryController"
                     Write-Host " "
                     $badMachines = @()
                     # Machines with 100% load evaluator and 0 sessions
@@ -317,9 +316,9 @@ Function Reset-BadLoadEvaluators
                             Write-Host "In logging mode - not taking action. Hosts in need of attention:"
                             Write-Host "$badOutput"
                         }
-                    }
+                    if ($badmachines){$script:bad=1}
+		    }
                     else {
-                        Write-Host "No bad load evaluators found on $DeliveryController`n"
                     }
                     Write-Host " "
                 }
@@ -407,6 +406,7 @@ Function Get-RDSGracePeriod
                                     If ($GracePeriod -ilt '5' -and $GracePeriod -igt '0')
                                         {
                                             Write-host "$vmName Grace Period BAD - NEEDS ATTENTION ($GracePeriod)"
+					    if ($GracePeriod){$script:bad=1}
                                         }
                                         Else
                                         {
@@ -535,13 +535,13 @@ Function Check-AppVLogs
 ############ Email SMTP ###########
 Function Email
     {
-        if ($bad -eq '1')
+        if ($script:bad -eq '1')
             {
                 $results = (Get-Content -Path $outputloc -raw)
             }
         else
             {
-                $results = "Citrix is all good in the hood!"
+                $results = "Citrix Morning Report is Clean.  Check log for details ($LogDir)."
             }
         $smtpserver = $SMTPserver
         $msg = New-Object Net.Mail.MailMessage
