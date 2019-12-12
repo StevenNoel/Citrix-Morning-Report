@@ -207,7 +207,7 @@ Function UpTime
                                                 #Write-host $uptime.HostedMachineName
                                                 #Perform System Uptime Check
 					                            $LastBoot = (Get-WmiObject -Class Win32_OperatingSystem -computername $uptime.DNSName).LastBootUpTime
-        			                            $WMIsysuptime = (Get-Date) – [System.Management.ManagementDateTimeconverter]::ToDateTime($LastBoot)
+        			                            $WMIsysuptime = (Get-Date) - [System.Management.ManagementDateTimeconverter]::ToDateTime($LastBoot)
         			                            $WMIdays = $WMIsysuptime.Days
 			                                    $WMIDaystoHours = ($WMIsysuptime.Days)*24
         			                            $WMIhours = $WMIsysuptime.hours
@@ -547,7 +547,7 @@ Function Email
         $msg = New-Object Net.Mail.MailMessage
         $smtp = New-Object net.Mail.SmtpClient($smtpserver)
         $msg.From = $FromAddress
-        $msg.To.Add($ToAddress)
+        Foreach ($to in $Toaddress){$msg.To.Add($to)}
         $msg.Subject = "**Citrix Morning Report**"
         $msg.body = "$results"
         #$msg.Attachments.Add($att)
