@@ -573,7 +573,7 @@ Function Email
         $smtp = New-Object net.Mail.SmtpClient($smtpserver)
         $msg.From = $FromAddress
         Foreach ($to in $Toaddress){$msg.To.Add($to)}
-        $msg.Subject = "**Citrix Morning Report**"
+        $msg.Subject = "**Citrix Morning Report - $($DeliveryControllers)**"
         $msg.body = "$results"
         #$msg.Attachments.Add($att)
         $smtp.Send($msg)
