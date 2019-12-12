@@ -51,6 +51,6 @@ This Example runs the script on Delivery Controller 'xd7-dc01' and logs the resu
 ```
 This Example puts the script in 'Log Mode' in which it will report everything, but won't take any action.  Such as restarting Machines or Powering them on.
 ```
-.\Citrix-Morning-Report-Git.ps1 -DeliveryControllers xd7-dc01 -LogDir c:\temp -Email -SMTPserver smtp.domain.local -ToAddress '"Steve@adf.com","John@adf.com"' -FromAddress Steve@adf.com
+.\Citrix-Morning-Report-Git.ps1 -DeliveryControllers xd7-dc01 -LogDir c:\temp -Email -SMTPserver smtp.domain.local -ToAddress "Steve@adf.com","John@adf.com" -FromAddress Steve@adf.com
 ```
 This uses the '-Email' Flag along with the SMTP Server and To/From Address
