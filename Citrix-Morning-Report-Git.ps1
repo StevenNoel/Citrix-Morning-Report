@@ -186,6 +186,31 @@ Function PowerState
     }
 ############ END List Bad Power States ###########
 
+############ List Pending Updates ###########
+Function PendingUpdates
+    {
+        Write-Host "****************************************************"
+        
+            Foreach ($DeliveryController in $DeliveryControllers)
+                {
+                    write-host "Machines with Pending Updates in " $DeliveryController ":" -ForegroundColor Green
+                    $pupdates = Get-BrokerMachine -AdminAddress $DeliveryController -MaxRecordCount 5000 -ProvisioningType MCS | Sort-Object DNSName
+                        foreach ($pupdate in $pupdates)
+                            {
+                                #Write-host $pupdate.DNSName.Split(".",2)[0] $pupdate.ImageOutOfDate
+                                if ($pupdate.ImageOutOfDate -eq $True)
+                                    {
+                                        Write-host $pupdate.DNSName.Split(".",2)[0] $pupdate.ImageOutOfDate
+                                        if ($pupdates){$script:bad=1}
+                                    }
+                            }
+                    
+                Write-host " "
+                }
+        Write-Host "****************************************************"    
+    }
+############ END List Pending Updates ###########
+
 ############ List Bad Up Time ###########
 Function UpTime
     {
@@ -576,6 +601,11 @@ $now = Get-Date -Format s
 write-host "- $now"
 
 PowerState
+
+$now = Get-Date -Format s
+write-host "- $now"
+
+PendingUpdates
 
 $now = Get-Date -Format s
 write-host "- $now"
