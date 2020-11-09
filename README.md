@@ -4,6 +4,9 @@ This script is something that can be scheduled to be run every morning to unders
 Tested with XA/XD 7.15LTSR and 7.18, however this should work with pretty much all 7.x versions.
 
 Note: Use the -LogOnly option to run the script in Log Only mode, which doesn't take any actions on any machines.
+
+If you're looking for a Deep Dive video on overall use of this script, check out https://youtu.be/axpU49cNh3E
+
 # Prerequisites
 You can run this on a Delivery Controller or a machine that has Studio installed.  See link for more information: https://developer-docs.citrix.com/projects/delivery-controller-sdk/en/latest/?_ga=2.136519158.731763323.1530151703-1594485461.1522783813#use-the-sdk 
 
